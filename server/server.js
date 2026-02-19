@@ -5,28 +5,23 @@ const { connectDB, sequelize } = require('./config/db');
 
 const authRoutes = require('./routes/auth');
 
+// Basic environment check
+console.log('--- Environment Check ---');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('PORT:', process.env.PORT);
+console.log('DATABASE_URL defined:', !!process.env.DATABASE_URL);
+console.log('JWT_SECRET defined:', !!process.env.JWT_SECRET);
+console.log('-------------------------');
+
+if (!process.env.DATABASE_URL) {
+  console.error('❌ ERROR: DATABASE_URL is not defined in environment variables');
+  process.exit(1);
+}
+
 const app = express();
 
-// Middleware
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:5175',
-  'http://localhost:3000',
-];
-
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-    // Allow localhost and any Vercel deployment
-    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-      return callback(null, true);
-    }
-    callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-}));
+// Simplified CORS for debugging - will refine once it's up
+app.use(cors());
 app.use(express.json());
 
 // Routes
@@ -37,19 +32,40 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'KODFLIX API is running' });
 });
 
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ status: 'error', message: err.message });
+});
+
 const PORT = process.env.PORT || 5000;
 
 // Sync database and start server
 const startServer = async () => {
-  await connectDB();
+  try {
+    console.log('📡 Connecting to database...');
+    await connectDB();
 
-  // Sync models (creates tables if they don't exist)
-  await sequelize.sync();
-  console.log('✅ Database models synced');
+    console.log('🔄 Syncing models...');
+    await sequelize.sync();
+    console.log('✅ Database models synced');
 
-  app.listen(PORT, () => {
-    console.log(`🚀 KODFLIX server running on port ${PORT}`);
-  });
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 KODFLIX server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('❌ FATAL: Server failed to start:', error);
+    process.exit(1);
+  }
 };
+
+process.on('uncaughtException', (err) => {
+  console.error('🔥 CRITICAL: Uncaught Exception:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🔥 CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
+});
 
 startServer();
