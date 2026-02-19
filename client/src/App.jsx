@@ -8,7 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
     return (
-        <BrowserRouter>
+        <HashRouter>
             <Routes>
                 {/* Public routes */}
                 <Route path="/login" element={<Login />} />
@@ -43,7 +43,7 @@ function App() {
                 {/* Catch-all */}
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-        </BrowserRouter>
+        </HashRouter>
     )
 }
 
