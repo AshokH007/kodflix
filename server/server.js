@@ -1,11 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const { connectDB, sequelize } = require('./config/db');
 
-const authRoutes = require('./routes/auth');
-
-// Basic environment check
+// Basic environment check - DO THIS FIRST before importing db/routes
 console.log('--- Environment Check ---');
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('PORT:', process.env.PORT);
@@ -15,8 +12,12 @@ console.log('-------------------------');
 
 if (!process.env.DATABASE_URL) {
   console.error('❌ ERROR: DATABASE_URL is not defined in environment variables');
-  process.exit(1);
+  // Don't exit immediately in some environments to allow logs to flush
+  setTimeout(() => process.exit(1), 1000);
 }
+
+const { connectDB, sequelize } = require('./config/db');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 
